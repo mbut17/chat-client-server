@@ -1,0 +1,45 @@
+import socket,sys,select,string
+socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+if (len(sys.argv) < 3):
+    print("ENTER: python chatclient.py hostname:port nickname")
+    sys.exit()
+input_list = sys.argv[1].split(':')
+HOSTNAME =input_list[0]
+PORT = int(input_list[1])
+nick = sys.argv[2]
+socket.settimeout(10)
+socket.connect((HOSTNAME,PORT))
+print("Connected to server")
+name = 'NICK '+ nick
+socket.send(name)
+x =''
+
+while 1 :
+    socket_list = [sys.stdin,socket]
+    read_list,write_list,error_list = select.select(socket_list,[], [])
+    for i in read_list:
+        if i == socket:
+            msg = i.recv(1024)
+            if not msg:
+                print("DISCONNECTED")
+                sys.exit()
+            else:
+                    if msg != 'MSG '+nick+' '+x :
+                        sys.stdout.write(msg.strip('MSG '))
+                        sys.stdout.flush()
+                    else :
+                        continue
+
+
+        else:
+                x = ''
+                message = sys.stdin.readline()
+                x += message
+                msg ='MSG ' + message
+                socket.send(msg.encode('utf-8'))
+                sys.stdout.write("You : ")
+                sys.stdout.write(message)
+                sys.stdout.flush()
+
+socket.close()
+
