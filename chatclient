@@ -1,45 +1,70 @@
-import socket,sys,select,string
-socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-if (len(sys.argv) < 3):
-    print("ENTER: python chatclient.py hostname:port nickname")
+#!/usr/bin/python3
+
+import socket
+import sys
+#from _thread import *
+import select 
+import re 
+
+if len(sys.argv)!=3:
+    print("Input format be = ./chatclient ip:port nickname")
     sys.exit()
-input_list = sys.argv[1].split(':')
-HOSTNAME =input_list[0]
-PORT = int(input_list[1])
-nick = sys.argv[2]
-socket.settimeout(10)
-socket.connect((HOSTNAME,PORT))
-print("Connected to server")
-name = 'NICK '+ nick
-socket.send(name)
-x =''
 
-while 1 :
-    socket_list = [sys.stdin,socket]
-    read_list,write_list,error_list = select.select(socket_list,[], [])
-    for i in read_list:
-        if i == socket:
-            msg = i.recv(1024)
-            if not msg:
-                print("DISCONNECTED")
-                sys.exit()
-            else:
-                    if msg != 'MSG '+nick+' '+x :
-                        sys.stdout.write(msg.strip('MSG '))
-                        sys.stdout.flush()
-                    else :
-                        continue
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 
+Info = (sys.argv[1])
+a=Info.split(':')
+IP_address=str(a[0])
+port=int(a[1])
+nick=str(sys.argv[2])
+
+
+s.connect((IP_address, port))
+
+first_msg=s.recv(2048).decode('utf-8')
+
+print(first_msg)
+
+nick = 'NICK ' + nick
+
+
+s.sendall(nick.encode('utf-8'))
+
+ok_msg=s.recv(2048).decode('utf-8')
+print(ok_msg)
+if ok_msg == "OK":
+    pass
+elif ok_msg == "ERR malformed nick name":
+    print('dont enter nick name with special characters,limit upto 12 characters')
+    print('disconnecting, try with valid nickname')
+    sys.exit()
+    
+    
+
+
+
+while True:
+    socket_list=[sys.stdin, s]
+    
+
+    read_sockets,write_sockets,error_sockets=select.select(socket_list,[],[])
+    
+    for sockets in read_sockets:
+        if sockets == s:
+            message = sockets.recv(2048).decode('utf-8')
+            print(message)
         else:
-                x = ''
-                message = sys.stdin.readline()
-                x += message
-                msg ='MSG ' + message
-                socket.send(msg.encode('utf-8'))
-                sys.stdout.write("You : ")
-                sys.stdout.write(message)
-                sys.stdout.flush()
+            message=sys.stdin.readline()
+            
+            message = 'MSG '+ message
+            if message == '\n':
+                continue
+            else:
+                s.sendall(message.encode('utf-8'))
+                
+s.close()
 
-socket.close()
 
